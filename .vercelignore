@@ -1,0 +1,6 @@
+.next
+node_modules
+prisma/dev.db
+out
+test-results
+**/*.log
