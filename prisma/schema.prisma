@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  title       String
+  // 카테고리 필드: enum 대신 문자열로 저장 (SQLite 제약)
+  category    String    @default("GENERAL")
+  slug        String    @unique
+  description String?
+  content     String
+  published   Boolean   @default(true)
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tags        PostTag[]
+  author      User?     @relation(fields: [authorId], references: [id])
+  authorId    Int?
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+  @@id([postId, tagId])
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  name      String?
+  // 관리자 여부
+  isAdmin   Boolean @default(false)
+  password  String
+  // 이메일 검증 여부
+  emailVerified Boolean @default(false)
+  // 비밀번호 재설정 토큰(임시)과 만료
+  passwordResetToken String?
+  passwordResetTokenExpiry DateTime?
+  posts     Post[]
+  sentMessages     Message[] @relation("sentMessages")
+  receivedMessages Message[] @relation("receivedMessages")
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("sentMessages", fields: [senderId], references: [id])
+  receiver User @relation("receivedMessages", fields: [receiverId], references: [id])
+}
+
+// NOTE: Category enum removed because SQLite connector may not support native enums.
+// Use the string values: CREDIT_CARD, MOBILE_CHARGE, LOAN, SCAM, GENERAL

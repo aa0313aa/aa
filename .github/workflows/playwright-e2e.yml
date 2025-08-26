@@ -1,0 +1,31 @@
+name: Playwright E2E
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: npm ci
+      - name: Build and start Next (bind 0.0.0.0)
+        run: |
+          npm run build
+          HOST=0.0.0.0 npm run start &
+      - name: Wait for server
+        run: npx wait-on http://0.0.0.0:3000 http://127.0.0.1:3000 http://localhost:3000
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run internal DB-level E2E
+        run: npm run test:e2e-extended
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=list
